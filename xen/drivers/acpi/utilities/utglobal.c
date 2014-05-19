@@ -43,6 +43,7 @@
 
 #define DEFINE_ACPI_GLOBALS
 
+#include <asm/system.h>
 #include <xen/config.h>
 #include <xen/init.h>
 #include <xen/lib.h>
