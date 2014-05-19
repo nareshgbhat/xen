@@ -33,6 +33,11 @@
 
 #define CONFIG_ARM_L1_CACHE_SHIFT 7 /* XXX */
 
+#if defined(CONFIG_ARM_64)
+#define CONFIG_ACPI 1
+#define CONFIG_ACPI_BOOT 1
+#endif
+
 #define CONFIG_SMP 1
 
 #define CONFIG_VIDEO 1
