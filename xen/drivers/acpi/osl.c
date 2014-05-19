@@ -66,6 +66,9 @@ void __init acpi_os_vprintf(const char *fmt, va_list args)
 
 acpi_physical_address __init acpi_os_get_root_pointer(void)
 {
+	/* Using bootwrapper, Temporary fix to over come from efi linker error */
+	const bool_t efi_enabled = 0;
+
 	if (efi_enabled) {
 		if (efi.acpi20 != EFI_INVALID_TABLE_ADDR)
 			return efi.acpi20;
@@ -96,7 +99,11 @@ acpi_os_map_memory(acpi_physical_address phys, acpi_size size)
 			return __va(phys);
 		return __vmap(&pfn, PFN_UP(offs + size), 1, 1, PAGE_HYPERVISOR_NOCACHE) + offs;
 	}
+#ifdef CONFIG_X86
 	return __acpi_map_table(phys, size);
+#else
+	return __va(phys);
+#endif
 }
 
 void acpi_os_unmap_memory(void __iomem * virt, acpi_size size)
@@ -105,6 +112,7 @@ void acpi_os_unmap_memory(void __iomem * virt, acpi_size size)
 		vunmap((void *)((unsigned long)virt & PAGE_MASK));
 }
 
+#ifdef CONFIG_X86
 acpi_status acpi_os_read_port(acpi_io_address port, u32 * value, u32 width)
 {
 	u32 dummy;
@@ -140,6 +148,7 @@ acpi_status acpi_os_write_port(acpi_io_address port, u32 value, u32 width)
 
 	return AE_OK;
 }
+#endif
 
 acpi_status
 acpi_os_read_memory(acpi_physical_address phys_addr, u32 * value, u32 width)

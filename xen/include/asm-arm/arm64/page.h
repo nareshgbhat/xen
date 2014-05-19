@@ -1,6 +1,8 @@
 #ifndef __ARM_ARM64_PAGE_H__
 #define __ARM_ARM64_PAGE_H__
 
+#include <asm-arm/system.h>
+
 #ifndef __ASSEMBLY__
 
 /* Write a pagetable entry */

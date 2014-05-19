@@ -170,6 +170,7 @@ long do_sysctl(XEN_GUEST_HANDLE_PARAM(xen_sysctl_t) u_sysctl)
         op->u.availheap.avail_bytes <<= PAGE_SHIFT;
         break;
 
+#ifdef CONFIG_X86
 #ifdef HAS_ACPI
     case XEN_SYSCTL_get_pmstat:
         ret = do_get_pm_info(&op->u.get_pmstat);
@@ -180,6 +181,7 @@ long do_sysctl(XEN_GUEST_HANDLE_PARAM(xen_sysctl_t) u_sysctl)
         if ( ret == -EAGAIN )
             copyback = 1;
         break;
+#endif
 #endif
 
     case XEN_SYSCTL_page_offline_op:
