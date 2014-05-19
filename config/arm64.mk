@@ -8,6 +8,7 @@ CFLAGS += #-marm -march= -mcpu= etc
 
 HAS_PL011 := y
 HAS_NS16550 := y
+HAS_ACPI := y
 
 # Use only if calling $(LD) directly.
 LDFLAGS_DIRECT += -EL
