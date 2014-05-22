@@ -202,7 +202,11 @@ acpi_os_write_memory(acpi_physical_address phys_addr, u32 value, u32 width)
 	return AE_OK;
 }
 
+#ifdef CONFIG_X86
 #define is_xmalloc_memory(ptr) ((unsigned long)(ptr) & (PAGE_SIZE - 1))
+#else
+#define is_xmalloc_memory(ptr) 1
+#endif
 
 void *__init acpi_os_alloc_memory(size_t sz)
 {

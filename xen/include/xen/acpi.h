@@ -42,6 +42,17 @@
 
 #ifdef CONFIG_ACPI_BOOT
 
+enum acpi_irq_model_id {
+        ACPI_IRQ_MODEL_PIC = 0,
+        ACPI_IRQ_MODEL_IOAPIC,
+        ACPI_IRQ_MODEL_IOSAPIC,
+        ACPI_IRQ_MODEL_PLATFORM,
+        ACPI_IRQ_MODEL_GIC,
+        ACPI_IRQ_MODEL_COUNT
+};
+
+extern enum acpi_irq_model_id   acpi_irq_model;
+
 enum acpi_interrupt_id {
 	ACPI_INTERRUPT_PMI	= 1,
 	ACPI_INTERRUPT_INIT,

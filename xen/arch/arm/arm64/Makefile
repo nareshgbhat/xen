@@ -1,4 +1,5 @@
 subdir-y += lib
+subdir-y += acpi
 
 obj-y += entry.o
 
