@@ -697,6 +697,7 @@ void __init start_xen(unsigned long boot_phys_offset,
 #if defined(CONFIG_ACPI) && defined(CONFIG_ARM_64)
     acpi_boot_table_init();
     early_acpi_boot_init();
+    acpi_boot_init();
 #endif
 
     dt_unflatten_host_device_tree();
