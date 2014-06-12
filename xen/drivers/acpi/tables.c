@@ -190,6 +190,17 @@ void __init acpi_table_print_madt_entry(struct acpi_subtable_header *header)
 		}
 		break;
 
+        case ACPI_MADT_TYPE_GENERIC_INTERRUPT:
+                {
+                        struct acpi_madt_generic_interrupt *p =
+                            (struct acpi_madt_generic_interrupt *)header;
+                        printk(KERN_INFO PREFIX
+                               "GIC (acpi_id[0x%04x] gic_id[0x%04x] %s)\n",
+                               p->uid, p->gic_id,
+                               (p->flags & ACPI_MADT_ENABLED) ? "enabled" : "disabled");
+                }
+                break;
+
 	default:
 		printk(KERN_WARNING PREFIX
 		       "Found unsupported MADT entry (type = %#x)\n",
