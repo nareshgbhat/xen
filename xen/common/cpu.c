@@ -216,3 +216,21 @@ void enable_nonboot_cpus(void)
 
     cpumask_clear(&frozen_cpus);
 }
+
+static DECLARE_BITMAP(cpu_present_bits, NR_CPUS) __read_mostly;
+static DECLARE_BITMAP(cpu_possible_bits, NR_CPUS) __read_mostly;
+void set_cpu_possible(unsigned int cpu, bool possible)
+{
+        if (possible)
+                cpumask_set_cpu(cpu, to_cpumask(cpu_possible_bits));
+        else
+                cpumask_clear_cpu(cpu, to_cpumask(cpu_possible_bits));
+}
+
+void set_cpu_present(unsigned int cpu, bool present)
+{
+        if (present)
+                cpumask_set_cpu(cpu, to_cpumask(cpu_present_bits));
+        else
+                cpumask_clear_cpu(cpu, to_cpumask(cpu_present_bits));
+}
