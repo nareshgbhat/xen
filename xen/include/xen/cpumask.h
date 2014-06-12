@@ -78,6 +78,7 @@
 #include <xen/bitmap.h>
 #include <xen/kernel.h>
 #include <xen/random.h>
+#include <xen/stdbool.h>
 
 typedef struct cpumask{ DECLARE_BITMAP(bits, NR_CPUS); } cpumask_t;
 
@@ -294,6 +295,21 @@ static inline int cpulist_scnprintf(char *buf, int len,
 	return bitmap_scnlistprintf(buf, len, srcp->bits, nr_cpu_ids);
 }
 
+/**
+ * cpumask_next_zero - get the next unset cpu in a cpumask
+ * @n: the cpu prior to the place to search (ie. return will be > @n)
+ * @srcp: the cpumask pointer
+ *
+ * Returns >= nr_cpu_ids if no further cpus unset.
+ */
+static inline unsigned int cpumask_next_zero(int n, const cpumask_t *srcp)
+{
+        /* -1 is a legal arg here. */
+        if (n != -1)
+                cpumask_check(n);
+        return find_next_zero_bit(srcp->bits, nr_cpu_ids, n+1);
+}
+
 /*
  * cpumask_var_t: struct cpumask for stack usage.
  *
@@ -439,6 +455,30 @@ extern cpumask_t cpu_present_map;
 #define for_each_possible_cpu(cpu) for_each_cpu(cpu, &cpu_possible_map)
 #define for_each_online_cpu(cpu)   for_each_cpu(cpu, &cpu_online_map)
 #define for_each_present_cpu(cpu)  for_each_cpu(cpu, &cpu_present_map)
+
+/* Wrappers for arch boot code to manipulate normally-constant masks */
+void set_cpu_possible(unsigned int cpu, bool possible);
+void set_cpu_present(unsigned int cpu, bool present);
+
+/**
+ * to_cpumask - convert an NR_CPUS bitmap to a struct cpumask *
+ * @bitmap: the bitmap
+ *
+ * There are a few places where cpumask_var_t isn't appropriate and
+ * static cpumasks must be used (eg. very early boot), yet we don't
+ * expose the definition of 'struct cpumask'.
+ *
+ * This does the conversion, and can be used as a constant initializer.
+ */
+#define to_cpumask(bitmap)                                              \
+        ((struct cpumask *)(1 ? (bitmap)                                \
+                            : (void *)sizeof(__check_is_bitmap(bitmap))))
+
+static inline int __check_is_bitmap(const unsigned long *bitmap)
+{
+        return 1;
+}
+
 
 /* Copy to/from cpumap provided by control tools. */
 struct xenctl_bitmap;
