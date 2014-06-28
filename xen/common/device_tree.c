@@ -24,6 +24,8 @@
 #include <xen/ctype.h>
 #include <xen/lib.h>
 
+#include <asm/acpi.h>
+
 struct dt_early_info __initdata early_info;
 const void *device_tree_flattened;
 dt_irq_xlate_func dt_irq_xlate;
@@ -384,6 +386,43 @@ static void __init process_chosen_node(const void *fdt, int node,
     struct dt_mb_module *mod = &early_info.modules.module[MOD_INITRD];
     paddr_t start, end;
     int len;
+
+#ifdef CONFIG_ACPI
+
+    printk("\nACPI: Checking for ACPI in /chosen node");
+
+    /* Scan ACPI choosen node information */
+    prop = fdt_get_property(fdt, node, "linux,acpi-start", &len);
+    if ( !prop )
+       /* no ACPI present */
+       return;
+    if ( len != sizeof(u32) && len != sizeof(u64) )
+    {
+        printk("linux,acpi-start property has invalid length %d\n", len);
+        return;
+    }
+    start = dt_read_number((void *)&prop->data, dt_size_to_cells(len));
+
+    prop = fdt_get_property(fdt, node, "linux,acpi-len", &len);
+    if ( !prop )
+    {
+        printk("linux,acpi-len not present but -start was\n");
+        return;
+    }
+    if ( len != sizeof(u32) && len != sizeof(u64) )
+    {
+        printk("linux,acpi-len property has invalid length %d\n", len);
+        return;
+    }
+    end = dt_read_number((void *)&prop->data, dt_size_to_cells(len));
+
+    printk("\nACPI: Start info is %"PRIpaddr"-%"PRIpaddr" bytes \n", start, end);
+
+    /* Update the global RSDP structure */
+    acpi_arm_rsdp_info.phys_address = start;
+    acpi_arm_rsdp_info.size = end;
+
+#endif
 
     printk("Checking for initrd in /chosen\n");
 
