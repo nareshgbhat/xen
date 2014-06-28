@@ -24,6 +24,7 @@
 
 #include <xen/init.h>
 #include <xen/acpi.h>
+#include <xen/errno.h>
 
 #include <asm/acpi.h>
 
@@ -40,6 +41,12 @@ EXPORT_SYMBOL(acpi_disabled);
 
 int acpi_pci_disabled;         /* skip ACPI PCI scan and IRQ initialization */
 EXPORT_SYMBOL(acpi_pci_disabled);
+
+/* 1 to indicate PSCI is implemented */
+int acpi_psci_present;
+
+/* 1 to indicate HVC must be used instead of SMC as the PSCI conduit */
+int acpi_psci_use_hvc;
 
 enum acpi_irq_model_id acpi_irq_model = ACPI_IRQ_MODEL_PLATFORM;
 
@@ -69,6 +76,33 @@ void acpi_unregister_gsi(u32 gsi)
 }
 EXPORT_SYMBOL_GPL(acpi_unregister_gsi);
 
+static int __init acpi_parse_fadt(struct acpi_table_header *table)
+{
+       struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
+
+       /*
+        * Revision in table header is the FADT Major version,
+        * and there is a minor version of FADT which was introduced
+        * by ACPI 5.1, we only deal with ACPI 5.1 or higher version
+        * to get arm boot flags, or we will disable ACPI.
+        */
+       if (table->revision < 5 || fadt->minor_version < 1) {
+               printk("FADT version is %d.%d, no PSCI support, should be 5.1 or higher\n",
+                       table->revision, fadt->minor_version);
+               acpi_psci_present = 0;
+               disable_acpi();
+               return -EINVAL;
+       }
+
+       if (acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_COMPLIANT)
+               acpi_psci_present = 1;
+
+       if (acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_USE_HVC)
+               acpi_psci_use_hvc = 1;
+
+       return 0;
+}
+
 /*
  * acpi_boot_table_init() called from setup_arch(), always.
  *      1. find RSDP and get its address, and then find XSDT
@@ -93,4 +127,19 @@ int __init acpi_boot_table_init(void)
         }
 
 	return 0;
+}
+
+int __init acpi_boot_init(void)
+{
+       int err = 0;
+
+       /* If acpi_disabled, bail out */
+       if (acpi_disabled)
+               return -ENODEV;
+
+       err = acpi_table_parse(ACPI_SIG_FADT, acpi_parse_fadt);
+       if (err)
+           printk("Can't find FADT\n");
+
+       return err;
 }

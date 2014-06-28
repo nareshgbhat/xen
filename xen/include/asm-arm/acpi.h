@@ -60,6 +60,8 @@ extern int acpi_disabled;
 extern int acpi_noirq;
 extern int acpi_pci_disabled;
 extern int acpi_strict;
+extern int acpi_psci_present;
+extern int acpi_psci_use_hvc;
 
 /* map logic cpu id to physical APIC id
  * APIC = GIC cpu interface on ARM
