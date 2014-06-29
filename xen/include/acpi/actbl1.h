@@ -633,7 +633,9 @@ enum acpi_madt_type {
 	ACPI_MADT_TYPE_LOCAL_X2APIC_NMI = 10,
 	ACPI_MADT_TYPE_GENERIC_INTERRUPT = 11,
 	ACPI_MADT_TYPE_GENERIC_DISTRIBUTOR = 12,
-	ACPI_MADT_TYPE_RESERVED = 13	/* 13 and greater are reserved */
+	ACPI_MADT_TYPE_GIC_MSI_FRAME = 13,
+	ACPI_MADT_TYPE_GIC_REDISTRIBUTOR = 14,
+	ACPI_MADT_TYPE_RESERVED = 15    /* 15 and greater are reserved */
 };
 
 /*
@@ -754,18 +756,23 @@ struct acpi_madt_local_x2apic_nmi {
 	u8 reserved[3];
 };
 
-/* 11: Generic Interrupt (ACPI 5.0) */
+/* 11: Generic Interrupt (ACPI 5.1) */
 
 struct acpi_madt_generic_interrupt {
         struct acpi_subtable_header header;
         u16 reserved;           /* reserved - must be zero */
-        u32 gic_id;
+        u32 gic_id;		/* it was renamed to cpu interface number in ACPI 5.1 */
         u32 uid;
         u32 flags;
         u32 parking_version;
         u32 performance_interrupt;
         u64 parked_address;
         u64 base_address;
+	u64 gicv_base_address;
+	u64 gich_base_address;
+	u32 vgic_maintenance_interrupt;
+	u64 redist_base_address;
+	u64 mpidr;
 };
 
 /* 12: Generic Distributor (ACPI 5.0) */
@@ -779,13 +786,36 @@ struct acpi_madt_generic_distributor {
         u32 reserved2;          /* reserved - must be zero */
 };
 
+/* 13: GIC MSI Frame (ACPI 5.1) */
+
+struct acpi_madt_gic_msi_frame {
+       struct acpi_subtable_header header;
+       u16 reserved;           /* reserved - must be zero */
+       u32 gic_msi_frame_id;
+       u64 base_address;
+};
+
+/* 14: GIC Redistributor (ACPI 5.1) */
+
+struct acpi_madt_gic_redistributor {
+       struct acpi_subtable_header header;
+       u16 reserved;           /* reserved - must be zero */
+       u64 base_address;
+       u32 region_size;
+};
+
 /*
  * Common flags fields for MADT subtables
  */
 
-/* MADT Local APIC flags (lapic_flags) */
+/* MADT Local APIC flags (lapic_flags) and GICC flags */
 
 #define ACPI_MADT_ENABLED           (1)	/* 00: Processor is usable if set */
+
+/* MADT GICC flags only */
+ 
+#define ACPI_MADT_PERF_INT_MODE     (1<<1)     /* 01: Performance Interrupt Mode */
+#define ACPI_MADT_VGIC              (1<<2)     /* 02: VGIC Maintenance interrupt mode */
 
 /* MADT MPS INTI flags (inti_flags) */
 
