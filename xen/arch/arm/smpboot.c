@@ -31,6 +31,7 @@
 #include <xen/console.h>
 #include <asm/gic.h>
 #include <asm/psci.h>
+#include <asm-arm/acpi.h>
 
 cpumask_t cpu_online_map;
 cpumask_t cpu_present_map;
@@ -258,7 +259,13 @@ smp_get_max_cpus (void)
 void __init
 smp_prepare_cpus (unsigned int max_cpus)
 {
-    cpumask_copy(&cpu_present_map, &cpu_possible_map);
+    /*
+     * In ACPI mode, cpu_present_map was initialised when
+     * MADT table was parsed which before this function
+     * is called.
+     */
+     if (acpi_disabled)
+          cpumask_copy(&cpu_present_map, &cpu_possible_map);
 
     setup_cpu_sibling_map(0);
 }

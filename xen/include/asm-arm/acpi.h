@@ -105,4 +105,6 @@ static inline void acpi_disable_pci(void)
 #define acpi_strict 1		/* no ACPI spec workarounds on ARM */
 #endif
 
+#define MAX_GIC_CPU_INTERFACE 65535
+
 #endif /*_ASM_ARM_ACPI_H*/
