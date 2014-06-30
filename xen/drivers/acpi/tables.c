@@ -239,6 +239,70 @@ void __init acpi_table_print_madt_entry(struct acpi_subtable_header *header)
 
 
 int __init
+acpi_parse_entries(unsigned long table_size,
+                acpi_table_entry_handler handler,
+                struct acpi_table_header *table_header,
+                int entry_id, unsigned int max_entries)
+{
+        struct acpi_subtable_header *entry;
+        int count = 0;
+        unsigned long table_end;
+
+        if (acpi_disabled)
+                return -ENODEV;
+
+        if (!handler)
+                return -EINVAL;
+
+        if (!table_size)
+                return -EINVAL;
+
+        if (!table_header) {
+                printk("Table header not present\n");
+                return -ENODEV;
+        }
+
+        table_end = (unsigned long)table_header + table_header->length;
+
+        /* Parse all entries looking for a match. */
+
+        entry = (struct acpi_subtable_header *)
+            ((unsigned long)table_header + table_size);
+
+        while (((unsigned long)entry) + sizeof(struct acpi_subtable_header) <
+               table_end) {
+                if (entry->type == entry_id
+                    && (!max_entries || count++ < max_entries))
+                        if (handler(entry, table_end)) {
+                                count = -EINVAL;
+                                goto err;
+                }
+
+                /*
+                 * If entry->length is 0, break from this loop to avoid
+                 * infinite loop.
+                 */
+                if (entry->length == 0) {
+                        printk("[0x%02x] Invalid zero length\n", entry_id);
+                        count = -EINVAL;
+                        goto err;
+                }
+
+                entry = (struct acpi_subtable_header *)
+                    ((unsigned long)entry + entry->length);
+        }
+
+        if (max_entries && count > max_entries) {
+                printk("[0x%02x] ignored %i entries of %i found\n",
+                        entry_id, count - max_entries, count);
+        }
+
+err:
+        return count;
+}
+
+
+int __init
 acpi_table_parse_entries(char *id,
 			     unsigned long table_size,
 			     int entry_id,

@@ -80,6 +80,10 @@ int erst_init(void);
 
 int acpi_table_init (void);
 int acpi_table_parse(char *id, acpi_table_handler handler);
+int __init acpi_parse_entries(unsigned long table_size,
+                acpi_table_entry_handler handler,
+                struct acpi_table_header *table_header,
+                int entry_id, unsigned int max_entries);
 int acpi_table_parse_entries(char *id, unsigned long table_size,
 	int entry_id, acpi_table_entry_handler handler, unsigned int max_entries);
 int acpi_table_parse_madt(enum acpi_madt_type id, acpi_table_entry_handler handler, unsigned int max_entries);
