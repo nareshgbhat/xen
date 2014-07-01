@@ -106,5 +106,7 @@ static inline void acpi_disable_pci(void)
 #endif
 
 #define MAX_GIC_CPU_INTERFACE 65535
+#define MAX_GIC_DISTRIBUTOR   1                /* should be the same as MAX_GIC_NR */
+extern int __init acpi_gic_init(void);
 
 #endif /*_ASM_ARM_ACPI_H*/
