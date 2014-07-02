@@ -54,7 +54,11 @@ int acpi_psci_use_hvc;
 /* available_cpus means enabled cpu in MADT */
 static int available_cpus;
 
-enum acpi_irq_model_id acpi_irq_model = ACPI_IRQ_MODEL_PLATFORM;
+/*
+ * Since we're on ARM, the default interrupt routing model
+ * clearly has to be GIC.
+ */
+enum acpi_irq_model_id acpi_irq_model = ACPI_IRQ_MODEL_GIC;
 
 struct acpi_arm_root acpi_arm_rsdp_info;     /* info about RSDP from FDT */
 
