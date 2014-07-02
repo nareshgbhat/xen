@@ -241,33 +241,97 @@ struct acpi_s3pt_suspend {
 
 /*******************************************************************************
  *
- * GTDT - Generic Timer Description Table (ACPI 5.0)
+ * GTDT - Generic Timer Description Table (ACPI 5.1)
  *        Version 1
  *
  ******************************************************************************/
 
 struct acpi_table_gtdt {
 	struct acpi_table_header header;	/* Common ACPI table header */
-	u64 address;
-	u32 flags;
-	u32 secure_pl1_interrupt;
-	u32 secure_pl1_flags;
-	u32 non_secure_pl1_interrupt;
-	u32 non_secure_pl1_flags;
+	u64 cnt_control_base_address;
+	u32 reserved;
+	u32 secure_el1_interrupt;
+	u32 secure_el1_flags;
+	u32 non_secure_el1_interrupt;
+	u32 non_secure_el1_flags;
 	u32 virtual_timer_interrupt;
 	u32 virtual_timer_flags;
-	u32 non_secure_pl2_interrupt;
-	u32 non_secure_pl2_flags;
+	u32 non_secure_el2_interrupt;
+	u32 non_secure_el2_flags;
+	u64 cnt_read_base_address;
+	u32 platform_timer_count;
+	u32 platform_timer_offset;
 };
-
-/* Values for Flags field above */
-
-#define ACPI_GTDT_MAPPED_BLOCK_PRESENT      1
 
 /* Values for all "TimerFlags" fields above */
 
 #define ACPI_GTDT_INTERRUPT_MODE            1
 #define ACPI_GTDT_INTERRUPT_POLARITY        2
+
+#define ACPI_GTDT_ALWAYS_ON                4
+
+/* Values for GTDT subtable type in struct acpi_subtable_header */
+
+enum acpi_gtdt_type {
+	ACPI_GTDT_TYPE_GT_BLOCK = 0,    /* memory-mapped generic timer */
+	ACPI_GTDT_TYPE_SBSA_GENERIC_WATCHDOG = 1,
+	ACPI_GTDT_TYPE_RESERVED = 2     /* 2 and greater are reserved */
+};
+
+/*
+ * GTDT Subtables, correspond to Type in struct acpi_subtable_header
+ */
+
+/* 0: Generic Timer Block */
+
+struct acpi_gtdt_gt_block {
+	struct acpi_subtable_header header;
+	u16 reserved;
+	u64 gt_block_address;
+	u32 gt_block_timer_count;       /* must be less than or equal to 8 */
+	u32 gt_block_timer_offset;
+};
+
+/* GT Block Timer Structure */
+
+struct acpi_gt_block_timer {
+	u8 gt_frame_number;
+	u8 reseved[3];
+	u64 cnt_base_address;
+	u64 cnt_el0_base_adress;
+	u32 physical_timer_interrupt;
+	u32 physical_timer_flags;
+	u32 vitual_timer_interrupt;
+	u32 vitual_timer_flags;
+	u32 timer_common_flags;
+};
+
+/* Flag Definitions: GT Block Physical Timers and Virtual timers */
+
+#define ACPI_GT_BLOCK_INTERRUPT_MODE           1
+#define ACPI_GT_BLOCK_INTERRUPT_POLARITY       2
+
+/* Flag Definitions: Common Flags */
+
+#define ACPI_GT_BLOCK_IS_SECURE_TIMER  1
+#define ACPI_GT_BLOCK_ALWAYS_ON                2
+
+/* 1: SBSA Generic Watchdog Structure */
+
+struct acpi_sbsa_generic_watchdog {
+	struct acpi_subtable_header header;
+	u16 reserved;
+	u64 refresh_frame_address;
+	u64 control_frame_address;
+	u32 interrupt;
+	u32 flags;
+};
+
+/* Flag Definitions: SBSA Generic Watchdog */
+
+#define ACPI_SBSA_WATCHDOG_INTERRUPT_MODE      1
+#define ACPI_SBSA_WATCHDOG_INTERRUPT_POLARITY  2
+#define ACPI_SBSA_WATCHDOG_IS_SECURE_TIMER     4
 
 /*******************************************************************************
  *
