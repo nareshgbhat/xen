@@ -29,6 +29,7 @@
 #include <xen/time.h>
 #include <xen/sched.h>
 #include <xen/event.h>
+#include <xen/acpi.h>
 #include <asm/system.h>
 #include <asm/time.h>
 #include <asm/gic.h>
@@ -276,6 +277,52 @@ struct tm wallclock_time(uint64_t *ns)
 {
     return (struct tm) { 0 };
 }
+
+#if defined(CONFIG_ARM_64) && defined(CONFIG_ACPI)
+
+/* Initialize per-processor generic timer */
+static int __init arch_timer_acpi_init(struct acpi_table_header *table)
+{
+    int res;
+    struct acpi_table_gtdt *gtdt;
+    gtdt = (struct acpi_table_gtdt *)table;
+
+    /* Initialize all the generic timer IRQ variable from GTDT table */
+    timer_irq[TIMER_PHYS_NONSECURE_PPI] = gtdt->non_secure_el1_interrupt;
+    timer_irq[TIMER_PHYS_SECURE_PPI] = gtdt->secure_el1_interrupt;
+    timer_irq[TIMER_HYP_PPI] = gtdt->non_secure_el2_interrupt;
+    timer_irq[TIMER_VIRT_PPI] = gtdt->virtual_timer_interrupt;
+
+    printk("Generic Timer IRQ from ACPI GTDT: phys=%u hyp=%u virt=%u\n",
+           timer_irq[TIMER_PHYS_NONSECURE_PPI],
+           timer_irq[TIMER_HYP_PPI],
+           timer_irq[TIMER_VIRT_PPI]);
+
+    res = platform_init_time();
+    if ( res )
+        printk("Timer: Cannot initialize platform timer");
+
+    /* Check that this CPU supports the Generic Timer interface */
+    if ( !cpu_has_gentimer )
+        printk("CPU does not support the Generic Timer v1 interface");
+
+    cpu_khz = READ_SYSREG32(CNTFRQ_EL0) / 1000;
+
+    boot_count = READ_SYSREG64(CNTPCT_EL0);
+
+    printk("Using generic timer at %lu KHz\n", cpu_khz);
+
+    return 0;
+}
+
+int __init init_xen_acpi_time(void)
+{
+   /* Initialize all the generic timers presented in GTDT */
+   acpi_table_parse(ACPI_SIG_GTDT, arch_timer_acpi_init);
+   return 0;
+}
+
+#endif
 
 /*
  * Local variables:
