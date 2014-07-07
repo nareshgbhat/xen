@@ -11,6 +11,7 @@
 #include <xen/types.h>
 #include <public/xen.h>
 
+extern int init_xen_acpi_time(void);
 extern int init_xen_time(void);
 extern void cstate_restore_tsc(void);
 
