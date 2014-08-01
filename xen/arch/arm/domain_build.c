@@ -15,6 +15,7 @@
 #include <asm/setup.h>
 #include <asm/platform.h>
 #include <asm/psci.h>
+#include <asm-arm/acpi.h>
 
 #include <asm/gic.h>
 #include <xen/irq.h>
@@ -604,6 +605,50 @@ static int make_gic_node(const struct domain *d, void *fdt,
     return res;
 }
 
+static int make_acpi_timer_node(const struct domain *d, void *fdt)
+{
+    int res;
+    unsigned int irq;
+    gic_interrupt_t intrs[3];
+    u32 clock_frequency;
+
+    DPRINT("Create timer node from ACPI GTDT table\n");
+
+    res = fdt_begin_node(fdt, "timer");
+    if ( res )
+        return res;
+
+   /* The timer IRQ is emulated by Xen. It always exposes an active-low
+    * level-sensitive interrupt */
+
+    irq = timer_get_irq(TIMER_PHYS_SECURE_PPI);
+    DPRINT("  Secure interrupt %u\n", irq);
+    set_interrupt_ppi(intrs[0], irq, 0xf, DT_IRQ_TYPE_LEVEL_LOW);
+
+    irq = timer_get_irq(TIMER_PHYS_NONSECURE_PPI);
+    DPRINT("  Non secure interrupt %u\n", irq);
+    set_interrupt_ppi(intrs[1], irq, 0xf, DT_IRQ_TYPE_LEVEL_LOW);
+
+    irq = timer_get_irq(TIMER_VIRT_PPI);
+    DPRINT("  Virt interrupt %u\n", irq);
+    set_interrupt_ppi(intrs[2], irq, 0xf, DT_IRQ_TYPE_LEVEL_LOW);
+
+    res = fdt_property_interrupts(fdt, intrs, 3);
+    if ( res )
+        return res;
+
+    clock_frequency = READ_SYSREG32(CNTFRQ_EL0);
+
+    res = fdt_property_cell(fdt, "clock-frequency", clock_frequency);
+
+    if ( res )
+        return res;
+
+    res = fdt_end_node(fdt);
+
+    return res;
+}
+
 static int make_timer_node(const struct domain *d, void *fdt,
                            const struct dt_device_node *node)
 {
@@ -826,8 +871,12 @@ static int handle_node(struct domain *d, struct kernel_info *kinfo,
      * used_by DOMID_XEN so this check comes first. */
     if ( dt_match_node(gic_matches, node) )
         return make_gic_node(d, kinfo->fdt, node);
+
+    /* If ACPI is disabled then match the timer node from DT */
+    if (acpi_disabled) {
     if ( dt_match_node(timer_matches, node) )
         return make_timer_node(d, kinfo->fdt, node);
+    }
 
     /* Skip nodes used by Xen */
     if ( dt_device_used_by(node) == DOMID_XEN )
@@ -900,6 +949,10 @@ static int handle_node(struct domain *d, struct kernel_info *kinfo,
             return res;
 
         res = make_memory_node(d, kinfo->fdt, node, kinfo);
+        if ( res )
+            return res;
+
+        res = make_acpi_timer_node(d, kinfo->fdt);
         if ( res )
             return res;
 
