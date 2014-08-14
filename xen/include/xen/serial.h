@@ -167,6 +167,7 @@ void ns16550_init(int index, struct ns16550_defaults *defaults);
 void ehci_dbgp_init(void);
 
 void __init dt_uart_init(void);
+void __init acpi_uart_init(void);
 
 struct physdev_dbgp_op;
 int dbgp_op(const struct physdev_dbgp_op *);

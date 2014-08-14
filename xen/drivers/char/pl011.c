@@ -280,6 +280,90 @@ DT_DEVICE_START(pl011, "PL011 UART", DEVICE_SERIAL)
         .init = pl011_uart_init,
 DT_DEVICE_END
 
+/* Parse the SPCR table and initialize the Serial UART */
+#if defined(CONFIG_ARM_64) && defined(CONFIG_ACPI)
+
+#include <xen/acpi.h>
+
+static int __init acpi_pl011_uart_init(struct acpi_table_header *table)
+{
+    struct pl011 *uart;
+    u64 addr, size;
+
+    struct acpi_table_spcr *spcr;
+    spcr = (struct acpi_table_spcr *)table;
+
+    printk("Looking for UART information in ACPI SPCR table \n");
+
+    printk("(I) interface_type 0=full 16550, 1=subset: %u\n", spcr->interface_type);      /* 0=full 16550, 1=subset of 16550 */
+
+    printk("(I) UART at address   : 0x%08lX\n", spcr->serial_port.address);
+    printk("(I) UART space_id     : %u\n", spcr->serial_port.space_id);
+    printk("(I) UART bit_width    : %u\n", spcr->serial_port.bit_width);
+    printk("(I) UART bit_offset   : %u\n", spcr->serial_port.bit_offset);
+    printk("(I) UART access_width : %u\n", spcr->serial_port.access_width);
+
+    printk("(I) interrupt_type: %u\n", spcr->interrupt_type);
+    printk("(I) pc_interrupt  : %u\n", spcr->pc_interrupt);
+    printk("(I) interrupt     : %u\n", spcr->interrupt);
+    printk("(I) baud_rate     : %u\n", spcr->baud_rate);
+    printk("(I) parity        : %u\n", spcr->parity);
+    printk("(I) stop_bits     : %u\n", spcr->stop_bits);
+    printk("(I) flow_control  : %u\n", spcr->flow_control);
+    printk("(I) terminal_type : %u\n", spcr->terminal_type);
+
+    if (spcr->interface_type) {
+         printk("Interface_type 1=subset\n");
+         return ENXIO;
+    }
+    else
+         printk("Interface_type 0=full 16550\n");
+
+    uart = &pl011_com;
+
+    uart->clock_hz  = 0x16e3600;
+    uart->baud      = spcr->baud_rate;
+    uart->data_bits = 8;
+    uart->parity    = spcr->parity;
+    uart->stop_bits = spcr->stop_bits;
+
+    if ( spcr->interrupt < 0 )
+    {
+        printk("pl011: Unable to retrieve the IRQ\n");
+        return -EINVAL;
+    }
+
+    uart->irq = spcr->interrupt;
+    addr = spcr->serial_port.address;
+    size = 0x1000;
+    uart->regs = ioremap_nocache(addr, size);
+
+    if ( !uart->regs )
+    {
+        printk("pl011: Unable to map the UART memory\n");
+        return -ENOMEM;
+    }
+
+    uart->vuart.base_addr = addr;
+    uart->vuart.size = size;
+    uart->vuart.data_off = DR;
+    uart->vuart.status_off = FR;
+    uart->vuart.status = 0;
+
+    /* Register with generic serial driver. */
+    serial_register_uart(SERHND_DTUART, &pl011_driver, uart);
+
+    return 0;
+}
+
+void __init acpi_uart_init(void)
+{
+   printk("ACPI UART Init\n");
+   acpi_table_parse(ACPI_SIG_SPCR, acpi_pl011_uart_init);
+
+}
+#endif
+
 /*
  * Local variables:
  * mode: C

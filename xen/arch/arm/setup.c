@@ -709,7 +709,13 @@ void __init start_xen(unsigned long boot_phys_offset,
 
     init_IRQ();
 
+/* If ACPI enabled and ARM64 arch then UART initialization from SPCR table */
+#if defined(CONFIG_ACPI) && defined(CONFIG_ARM_64)
+    acpi_uart_init();
+#else
     dt_uart_init();
+#endif
+
     console_init_preirq();
 
     system_state = SYS_STATE_boot;
