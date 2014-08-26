@@ -15,6 +15,7 @@
 #include <asm/setup.h>
 #include <asm/platform.h>
 #include <asm/psci.h>
+#include <asm-arm/acpi.h>
 
 #include <asm/gic.h>
 #include <xen/irq.h>
@@ -822,12 +823,18 @@ static int handle_node(struct domain *d, struct kernel_info *kinfo,
         return 0;
     }
 
+if (acpi_disabled) {
     /* Replace these nodes with our own. Note that the original may be
      * used_by DOMID_XEN so this check comes first. */
     if ( dt_match_node(gic_matches, node) )
         return make_gic_node(d, kinfo->fdt, node);
     if ( dt_match_node(timer_matches, node) )
         return make_timer_node(d, kinfo->fdt, node);
+}
+else {
+   printk("Skip: DOM0 kernel will read GIC and Timer node related information from ACPI tables \n");
+   return 0;
+}
 
     /* Skip nodes used by Xen */
     if ( dt_device_used_by(node) == DOMID_XEN )
