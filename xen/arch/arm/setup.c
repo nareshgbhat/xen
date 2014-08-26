@@ -734,6 +734,8 @@ void __init start_xen(unsigned long boot_phys_offset,
     init_xen_time();
 #endif
 
+/* FIXME: Crashing here, Because it is trying to initialize GIC from DT */
+if (acpi_disabled)
     gic_init();
 
     set_current((struct vcpu *)0xfffff000); /* debug sanity */
@@ -752,9 +754,11 @@ void __init start_xen(unsigned long boot_phys_offset,
 
     xsm_dt_init();
 
+/* FIXME: Crashing here, Because it is trying to findout maintenance interrupt from DT */
+if (acpi_disabled)
     init_maintenance_interrupt();
 
-/* FIXME: Crashing here, If I do not add the condition */
+/* FIXME: Crashing here, it is trying to findout timer interrupt from DT */
 if (acpi_disabled)
     init_timer_interrupt();
 
